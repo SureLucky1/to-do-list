@@ -75,7 +75,7 @@ if (!existingTask) {
         }
       });
     });
-    router.post('/newlist', async ({ req, res }) => {
+    router.post('/newlistComplete', async ({ req, res }) => {
       let body = '';
       req.on('data', chunk => {
         body += chunk.toString();

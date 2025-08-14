@@ -135,20 +135,35 @@ await myApiClient.post('regular', { task: taskName });
 
 prioritizeFunction = (prioritize, idx) => {
   this.setState(prev => {
-    const newitems = prev.items.map((item, i)=>
-     i === 0 ?
-      {...item, item: item.task.map((subitem, index) =>{
-        if(index === idx){
-          subitem.priority = prioritize;
-        }
-        return subitem;
-      })} : item
-    )
+    const newitems = prev.items.map((it, i) =>
+      i === 0
+        ? { 
+            ...it, 
+            task: it.task.map((sub, index) =>
+              index === idx ? { ...sub, priority: prioritize } : sub
+            )
+          }
+        : it
+    );
     return { items: newitems };
-  }, () => {
-  this.props.reportItems(this.state.items);
-    });
+  }, () => this.props.reportItems(this.state.items));
 };
+searchPrioritizeFunction = (prioritize, idx) => {
+  this.setState(prev => {
+    const newitems = prev.items.map((it, i) =>
+      i === 0
+        ? { 
+            ...it, 
+            task: it.task.map((sub, index) =>
+              index === idx ? { ...sub, priority: prioritize } : sub
+            )
+          }
+        : it
+    );
+    return { items: newitems };
+  }, () => this.props.reportItems(this.state.items));
+};
+
 
     async addRegularItem (taskName) {
 if(this.state.items.length > 0){
@@ -383,10 +398,12 @@ render(){
                 }}
               >
                 <button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    this.deleteFunction(event, index);
-                  }}
+onClick={(event) => {
+  event.stopPropagation();
+  const idxInOriginal = this.state.items[0].task
+    .findIndex(t => t.name === item.name);
+  this.deleteFunction(event, idxInOriginal);
+}}
                   className="delete"
                 >
                   Delete
@@ -417,14 +434,47 @@ render(){
                   this.setPriority(null);
                 }}
               >
-                      <h1 
-                      onClick={() => { this.prioritizeFunction("Urgent and Vital", index); }}
+                                            <h1
+                      onClick={() => {
+                        const idxInItems = this.state.items[0]?.task.findIndex(
+                          (t) => t.name === item.name
+                        );
+                        if (idxInItems !== undefined && idxInItems !== -1) {
+                          this.prioritizeFunction("Urgent and Vital", idxInItems);
+                        }
+                        this.props.updateSearchResultPriority(
+                          item.name,
+                          "Urgent and Vital"
+                        );
+                      }}
                         >Urgent and Vital</h1>
                       <h1 
-                      onClick={() => {  this.prioritizeFunction("Important", index) }}
+                                            onClick={() => {
+                        const idxInItems = this.state.items[0]?.task.findIndex(
+                          (t) => t.name === item.name
+                        );
+                        if (idxInItems !== undefined && idxInItems !== -1) {
+                          this.prioritizeFunction("Important", idxInItems);
+                        }
+                        this.props.updateSearchResultPriority(
+                          item.name,
+                          "Important"
+                        );
+                      }}
                         >Important</h1>
                       <h1 
-                      onClick={() => {  this.prioritizeFunction("Normal", index) }}
+                                            onClick={() => {
+                        const idxInItems = this.state.items[0]?.task.findIndex(
+                          (t) => t.name === item.name
+                        );
+                        if (idxInItems !== undefined && idxInItems !== -1) {
+                          this.prioritizeFunction("Normal", idxInItems);
+                        }
+                        this.props.updateSearchResultPriority(
+                          item.name,
+                          "Normal"
+                        );
+                      }}
                         >Normal</h1>
               </div>
             )}
@@ -483,7 +533,9 @@ render(){
           }) }
         : item
     )
-  }));
+  }), ()=>{
+    this.props.reportItems(this.state.newListItem);
+  });
     };
 
     deleteFunction = async (event, i, mainIndex) => { 
@@ -494,21 +546,23 @@ render(){
         ? { ...item, task: item.task.filter((_, index) => index !== i) }
         : item
     )
-  }));
+  }), ()=>{
+    this.props.reportItems(this.state.newListItem);
+  });
 await myApiClient.delete("newlist", {
             task: event.target.parentNode.parentNode.querySelector('.para').innerText,
             date: event.target.parentNode.parentNode.parentNode.querySelector('.date').value
           })
     };
 
-upDatePrioritize=(event, newPrioritize, index)=>{
+upDatePrioritize=(event, newPrioritize)=>{
   // 想限定在“当前被点击的那条 .toDo 容器”里拿，得先把范围缩小到那个容器，再去找它下面的 .para
   const container = event.currentTarget.closest('.toDo');
 const itemName = container.querySelector('.para').innerText;
         const itemDate = event.target.parentNode.parentNode.parentNode.parentNode.querySelector('.date').value;
-console.log(itemName, itemDate, index)
+console.log(itemName, itemDate)
         this.setState({prioritize : newPrioritize}, ()=>{
-  this.prioritizeFunction(itemName, itemDate, index);
+  this.prioritizeFunction(itemName, itemDate);
 });
 }
 
@@ -520,14 +574,14 @@ console.log(itemName, itemDate, index)
     this.setState({itemDate: date})
   }
 
-      prioritizeFunction = (itemName, itemDate, idx) => {
+      prioritizeFunction = (itemName, itemDate) => {
         
        this.setState({newListItem: this.state.newListItem.map((item)=> 
         item.date === itemDate? {
           ...item,
-          task: item.task.map((item, index)=>{
+          task: item.task.map((item)=>{
             console.log(this.state.prioritize)
-            if(item.name===itemName && index===idx){
+            if(item.name===itemName){
               item.priority=this.state.prioritize; 
               return item
             } 
@@ -567,7 +621,7 @@ this.setState({newItem: e.target.value})
       event.target.innerText = `Done-Yes`;
         const itemName = event.target.parentNode.parentNode.querySelector('.para').innerText;
         const itemDate = event.target.parentNode.parentNode.querySelector('.date').value;
-await myApiClient.post('newlist', { task: itemName, date: itemDate });
+await myApiClient.post('newlistComplete', { task: itemName, date: itemDate });
     };
 
 toggleOpen = (index) => {
@@ -592,12 +646,9 @@ const date = e.target.value;
 console.log(date)
 this.setState(() => ({
   itemDate: date
-  // newListItem: pre.newListItem.map((item) => {
-  //   if(item.date == date){
-  //     return item.task
-  //   }
-  //    })
-}), ()=>{console.log(this.state.newListItem)});
+}), ()=>{
+  this.props.reportDate(this.state.itemDate);
+});
 
   }
      render ()  
@@ -709,13 +760,13 @@ const {searchResult, toggle} = this.props;
                               }}
                             >
                               <h1 
-                              onClick={(event) => { this.upDatePrioritize(event,"Urgent and Vital", index) }}
+                              onClick={(event) => { this.upDatePrioritize(event,"Urgent and Vital") }}
                               >Urgent and Vital</h1>
                               <h1 
-                              onClick={(event) => { this.upDatePrioritize(event,"Important", index); }}
+                              onClick={(event) => { this.upDatePrioritize(event,"Important"); }}
                               >Important</h1>
                               <h1 
-                              onClick={(event) => { this.upDatePrioritize(event,"Normal", index); }}
+                              onClick={(event) => { this.upDatePrioritize(event,"Normal"); }}
                                 >Normal</h1>
                             </div>
                           )}
@@ -756,23 +807,23 @@ const {searchResult, toggle} = this.props;
                             className="dropdown"
                             onClick={(e) => {
                               e.stopPropagation();
-                              //toggleOpen(index);
+                              this.toggleOpen(index);
                             }}
                           >
                             open List
                           </button>
-                          {/* {open[index] && (
+                          {this.state.open[index] && (
                             <div
                               className="buttonGroup"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                //toggleOpen(index);
+                                this.toggleOpen(index);
                               }}
                             >
                               <button
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  //deleteFunction(event);
+                                  this.deleteFunction(event);
                                 }}
                                 className="delete"
                               >
@@ -781,7 +832,7 @@ const {searchResult, toggle} = this.props;
                               <button
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  //reNameFunction(event);
+                                  this.reNameFunction(event);
                                 }}
                               >
                                 Rename
@@ -789,27 +840,51 @@ const {searchResult, toggle} = this.props;
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  //setPriority(index);
+                                  this.setPriority(index);
                                 }}
                               >
                                 Prioritize
                               </button>
                             </div>
-                          )} */}
-                          {/* {priority === index && (
+                          )}
+                          {this.state.priority === index && (
                             <div
                               className="priority-rating"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 //prioritizeFunction(event, index);
-                                //setPriority(null);
+                                this.setPriority(null);
                               }}
                             >
-                              <h1 onClick={() => { prioritize.current = "Urgent and Vital"; }}>Urgent and Vital</h1>
-                              <h1 onClick={() => { prioritize.current = "Important"; }}>Important</h1>
-                              <h1 onClick={() => { prioritize.current = "Normal"; }}>Normal</h1>
+                                            <h1
+                      onClick={(event) => {
+this.upDatePrioritize(event, "Urgent and Vital")
+                        this.props.updateSearchResultPriority(
+                          item.name,
+                          "Urgent and Vital"
+                        );
+                      }}
+                        >Urgent and Vital</h1>
+                      <h1 
+                      onClick={(event) => {
+this.upDatePrioritize(event, "Important")
+                        this.props.updateSearchResultPriority(
+                          item.name,
+                          "Important"
+                        );
+                      }}
+                        >Important</h1>
+                      <h1 
+                      onClick={(event) => {
+this.upDatePrioritize(event, "Normal")
+                        this.props.updateSearchResultPriority(
+                          item.name,
+                          "Normal"
+                        );
+                      }}
+                        >Normal</h1>
                             </div>
-                          )} */}
+                          )}
                         </div>
                       );
                     })}
@@ -859,12 +934,19 @@ constructor(props) {
                  ? <button onClick={this.regularExercisesToggle} className='add'>Go To Today</button>
                  : <button onClick={this.regularExercisesToggle} className='regular'>Go To Regular</button>
                }
-               <RegularTaskItem toggle={this.state.toggle} reportItems={this.handleReceiveItems} inputValue={this.props.inputValue} searchResult={this.props.searchResult}/>
+                             <RegularTaskItem
+               toggle={this.state.toggle}
+               reportItems={this.handleReceiveItems}
+               inputValue={this.props.inputValue}
+               searchResult={this.props.searchResult}
+               updateSearchResultPriority={this.props.updateSearchResultPriority}
+               />
                <DailyTaskItem  
-               searchResult={this.props.searchResult} 
-               toggle={this.state.toggle} 
+               searchResult={this.props.searchResult}
+               toggle={this.state.toggle}
                reportItems={this.handleReceiveDayItems}
                reportDate={this.handleReceiveDate}
+               updateSearchResultPriority={this.props.updateSearchResultPriority}
  />
              </div>)};
    }
@@ -927,17 +1009,36 @@ searchItem = () => {
     searchResult: searchItem,
   });
 };
-
+updateSearchResultPriority = (name, newPriority) => {
+  this.setState((prev) => {
+    const updateTask = (task) =>
+      task.name === name ? { ...task, priority: newPriority } : task;
+    return {
+      searchResult: prev.searchResult.map(updateTask),
+      regularItems: prev.regularItems.map((item) => ({
+        ...item,
+        task: item.task.map(updateTask),
+      })),
+      newListItem: prev.newListItem.map((item) => ({
+        ...item,
+        task: item.task.map(updateTask),
+      })),
+    };
+  }, ()=>{
+    console.log(this.state.newListItem)
+  });
+};
     save = async() => {
       if (this.state.toggle === true) {
     await myApiClient.put("regular", {regularTask: this.state.regularItems})
 console.log("App saved regularItem", this.state.regularItems)
-      } else {
+      } else if(this.state.toggle === false) {
         console.log("App newlist", this.state.newListItem)
 for(let i=0; i<this.state.newListItem.length; i++){
 if(this.state.newListItem[i].date === this.state.itemDate)
   await myApiClient.put("newlist", {date: this.state.itemDate, taskList:this.state.newListItem[i].task})
 }
+console.log(this.state.newListItem)
 
   
       }
@@ -966,6 +1067,7 @@ reportRegularItems={this.handleReceiveItems}
 reportToggle={this.handleToggle}
 reportDayItems={this.handleReceiveDayItems}
 reportDate={this.handleReceiveDate}
+updateSearchResultPriority={this.updateSearchResultPriority}
 //updatelist={updatelist}
 />
             <button onClick={this.save} className='save-btn'>save</button>
