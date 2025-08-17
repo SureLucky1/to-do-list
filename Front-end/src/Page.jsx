@@ -39,7 +39,6 @@ class ApiClient {
     }
   }
   async put(endpoint, data) {
-    console.log(data)
     try {
       const response = await fetch(`${this.baseURL}/${endpoint}`, {
         method: 'PUT',
@@ -102,7 +101,6 @@ const myApiClient = new ApiClient('http://localhost:8080');
     this.setState(
       { items: posts },
       () => {
-        console.log(this.state.items)
         this.props.reportItems(this.state.items);
       }
     );
@@ -261,7 +259,7 @@ render(){
               <button className="create" onClick={() => {this.addRegularItem(this.state.regularNewItem)}}>add Todo</button>
             </div>
       {!(searchResult.length > 0 ) ? this.state.items.length>0? this.state.items.map((item, index) => {
-        console.log(item)
+
         return (
           <div className="regular-item" key={index}>
             {item.task.map((task, idx) => {
@@ -276,9 +274,6 @@ render(){
                       ? { backgroundColor: "orange" }
                       : {}
                   }
-                  // onClick={() => {
-                  //   setNewItemTitle(task.name);
-                  // }}
                 >
                   <button className="complete"  
                   onClick={this.completeFunction}
@@ -506,9 +501,8 @@ onClick={(event) => {
     const posts = await myApiClient.get('newlist');
     this.setState(
       { newListItem: posts },
-      () => { // callback 確保 state 更新完成
+      () => { 
         this.props.reportItems(this.state.newListItem);
-        console.log("DailyTaskItem items after setState:", this.state.newListItem);
       }
     );
   } catch (error) {
@@ -560,7 +554,6 @@ upDatePrioritize=(event, newPrioritize)=>{
   const container = event.currentTarget.closest('.toDo');
 const itemName = container.querySelector('.para').innerText;
         const itemDate = event.target.parentNode.parentNode.parentNode.parentNode.querySelector('.date').value;
-console.log(itemName, itemDate)
         this.setState({prioritize : newPrioritize}, ()=>{
   this.prioritizeFunction(itemName, itemDate);
 });
@@ -580,7 +573,6 @@ console.log(itemName, itemDate)
         item.date === itemDate? {
           ...item,
           task: item.task.map((item)=>{
-            console.log(this.state.prioritize)
             if(item.name===itemName){
               item.priority=this.state.prioritize; 
               return item
@@ -589,7 +581,6 @@ console.log(itemName, itemDate)
           })
         }
           : item)})
-console.log(this.state.newListItem)
         this.setPriority(null);
       
     };
@@ -598,23 +589,42 @@ this.setState({newItem: e.target.value})
   }
 
 
-  addNewItem = async (newItem, itemDate)=>{
-    this.setState((pre)=>{
-      const newitems = pre.newListItem.map((item)=>
-         item.date === itemDate?
-      {...item, task: [...item.task,  { name: newItem, completed: false, priority: pre.prioritize }]}
-      : item);
-      return {newListItem: newitems}
-    }, () => { // callback 確保 state 更新完成
-        this.props.reportItems(this.state.newListItem);
-        this.props.reportDate(this.state.itemDate);
-        console.log("DailyTaskItem items after setState:", this.state.newListItem);
-      })
-// const task = [{
-//   taskList:{name: newItem, completed: false, priority: this.state.prioritize}, 
-//   date: itemDate}]
+addNewItem = (newItem, itemDate) => {
+  if (!newItem || !itemDate) return;
 
-  }
+  this.setState((prev) => {
+    const taskToAdd = {
+      name: newItem,
+      completed: false,
+      priority: prev.prioritize,
+    };
+
+    const idx = prev.newListItem.findIndex(x => x.date === itemDate);
+
+    // 已存在該 date：在該項的 task 陣列尾端加入新任務
+    if (idx !== -1) {
+      const nextList = prev.newListItem.map((it, i) =>
+        i === idx
+          ? { ...it, task: [...(it.task || []), taskToAdd] }
+          : it
+      );
+      return { newListItem: nextList, itemDate };
+    }
+
+    // 不存在該 date：新增一個新的日期項目
+    const nextList = [
+      ...prev.newListItem,
+      { date: itemDate, task: [taskToAdd] },
+    ];
+    return { newListItem: nextList, itemDate };
+  }, () => {
+    // callback：此時 state 已更新
+    const { newListItem, itemDate: finalDate } = this.state;
+    this.props.reportItems(newListItem);
+    this.props.reportDate(finalDate);
+  });
+};
+
 
     completeFunction = async (event) => {
       event.stopPropagation();
@@ -625,25 +635,20 @@ await myApiClient.post('newlistComplete', { task: itemName, date: itemDate });
     };
 
 toggleOpen = (index) => {
-  console.log(index)
   this.setState(prevState => ({
     open: {
-      /* 在這裡先展開 prevState.open */
       ...prevState.open,
-      /* 然後設定或反轉當前這個 index */
       [index]: !prevState.open[index]
     }
   }));
 };
 
 setPriority = (index) => {
-  console.log(index)
 this.setState({priority: index});
 };
 
   selectedDate=(e)=>{
 const date = e.target.value;
-console.log(date)
 this.setState(() => ({
   itemDate: date
 }), ()=>{
@@ -915,21 +920,19 @@ constructor(props) {
     }
 
       handleReceiveDate = (itemsFromChild) => {
-            console.log(itemsFromChild)
     this.setState({ itemDate: itemsFromChild }, ()=>{this.props.reportDate(this.state.itemDate);});
   };
+
       handleReceiveItems = (itemsFromChild) => {
-            console.log(itemsFromChild)
     this.setState({ regularItems: itemsFromChild }, ()=>{this.props.reportRegularItems(this.state.regularItems);});
   };
+
       handleReceiveDayItems = (itemsFromChild) => {
-            console.log('TaskList 收到 newListItem:', itemsFromChild);
     this.setState({ newListItem: itemsFromChild }, ()=>{this.props.reportDayItems(this.state.newListItem);});
   };
 
      render ()
      {            return (<div className="itemGroup">
-               <button className='add' onClick={this.priorityPanelToggle}>Priority</button>
                {this.state.toggle
                  ? <button onClick={this.regularExercisesToggle} className='add'>Go To Today</button>
                  : <button onClick={this.regularExercisesToggle} className='regular'>Go To Regular</button>
@@ -967,7 +970,6 @@ constructor(props) {
     }
     
   handleToggle = (itemsFromChild) => {
-        console.log("toggle", itemsFromChild)
     this.setState({ toggle: itemsFromChild });
   };
   handleReceiveDate = (itemsFromChild) => {
@@ -975,7 +977,6 @@ constructor(props) {
     this.setState({ itemDate: itemsFromChild });
   };
   handleReceiveItems = (itemsFromChild) => {
-        console.log('App 收到 RegularItems:',itemsFromChild)
     this.setState({ regularItems: itemsFromChild });
   };
 
@@ -995,8 +996,6 @@ this.setState({searchResult:[]})
     const dataChanged =
       prevState.regularItems !== this.state.regularItems ||
       prevState.newListItem !== this.state.newListItem;
-
-    // 只要底層資料變了且目前有關鍵字，就自動重跑搜尋
     if (dataChanged && this.state.inputValue) {
       this.searchItem();
     }
@@ -1025,20 +1024,16 @@ updateSearchResultPriority = (name, newPriority) => {
       })),
     };
   }, ()=>{
-    console.log(this.state.newListItem)
   });
 };
     save = async() => {
       if (this.state.toggle === true) {
     await myApiClient.put("regular", {regularTask: this.state.regularItems})
-console.log("App saved regularItem", this.state.regularItems)
       } else if(this.state.toggle === false) {
-        console.log("App newlist", this.state.newListItem)
 for(let i=0; i<this.state.newListItem.length; i++){
 if(this.state.newListItem[i].date === this.state.itemDate)
   await myApiClient.put("newlist", {date: this.state.itemDate, taskList:this.state.newListItem[i].task})
 }
-console.log(this.state.newListItem)
 
   
       }
@@ -1050,7 +1045,7 @@ render (){
       return (<ShowContext.Provider>
       <div className="App">
         <div className='panel'>
-          <h1>hello, kiki</h1>
+          <h1>Hello</h1>
           <p>Time: {date}</p>
         </div>
         <div className='main'>
@@ -1068,7 +1063,6 @@ reportToggle={this.handleToggle}
 reportDayItems={this.handleReceiveDayItems}
 reportDate={this.handleReceiveDate}
 updateSearchResultPriority={this.updateSearchResultPriority}
-//updatelist={updatelist}
 />
             <button onClick={this.save} className='save-btn'>save</button>
           </div>

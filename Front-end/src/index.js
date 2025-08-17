@@ -1,8 +1,6 @@
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './Page';
-import { Provider } from 'react-redux';
-import store from './redux-component/store';
 import reportWebVitals from './reportWebVitals';
 import React, {createContext, Suspense} from 'react';
 const ShowContext = createContext();
@@ -10,9 +8,7 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
 
 <React.StrictMode>
-<Provider store={store}>
   <App />
-  </Provider>,
 </React.StrictMode>
 );
 
