@@ -29,7 +29,7 @@ async function main() {
   }
 }
 
-/* ---------- newlist (Daily) ---------- */
+
 router.put('/newlist', async ({ req, res }) => {
   let body = '';
   req.on('data', chunk => { body += chunk.toString(); });
@@ -128,7 +128,6 @@ router.delete('/newlist', async ({ req, res }) => {
   });
 });
 
-/* ---------- regular ---------- */
 router.post('/regular', async ({ req, res }) => {
   let body = '';
   req.on('data', chunk => { body += chunk.toString(); });
