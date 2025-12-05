@@ -990,12 +990,8 @@ compareDate = (taskDate1, taskDate2) => {
   const takeDate1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate());
   const takeDate2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
 
-  if (this.state.priorityParmeter === "Closer") {
     return takeDate1 - takeDate2;  // 早的在前
-  } else if (this.state.priorityParmeter === "Farther") {
-    return takeDate2 - takeDate1;  // 晚的在前
-  }
-  return 0;
+
 }
 
 parseTimeToMinutes(timeStr) {
@@ -1012,13 +1008,7 @@ compareTime = (a, b) => {
   if (t1 == null) return 1;  // 沒時間排後面
   if (t2 == null) return -1; 
 
-  // timePriority: "Closer" / "Farther"
-  if (this.state.priorityParmeter === "Closer") {
     return t1 - t2;          // 早的在前
-  } else if (this.state.priorityParmeter === "Farther") {
-    return t2 - t1;          // 晚的在前
-  }
-  return 0;
 }
 
 
@@ -1029,15 +1019,11 @@ compareTime = (a, b) => {
             for(let i=0; i<priorityList.length; i++){
               for(let j=0; j<this.state.newListItem.length; j++){
                 for (let x=0; x<this.state.newListItem[j].task.length; x++) {
-                  // console.log(priorityList[i].name);
-                  // console.log(this.state.newListItem[j].task[x].name);
 if(priorityList[i].name === this.state.newListItem[j].task[x].name){
   priorityList[i].date = this.state.newListItem[j].date
 }
               }
-              // console.log(this.state.priorityList[i].date)
             }}
-  //仍未完成時間排序功能
           if(this.state.priorityParmeter === "Closer") {
             const filtered = this.state.priorityList
             .sort(this.compareDate)
