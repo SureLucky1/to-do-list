@@ -1312,7 +1312,12 @@ this.setState({searchResult:[]})
 
   priorityPanelToggle= (itemsFromChild)=>{
         this.setState({priority : itemsFromChild})
+    }
 
+    closePriorityPanel=(e)=>{
+      if(!e.target.closest(".priority-panel")){
+        this.setState({priority : false})
+      }
     }
 searchItem = () => {
   const allDayItems = this.state.newListItem.map((item)=>{return item.task}).flat()
@@ -1357,7 +1362,9 @@ render (){
               const day = new Date();
       const date = `${day.getDate()}/${day.getMonth() + 1}/${day.getFullYear()}`;
       return (<ShowContext.Provider>
-      <div className="App">
+      <div className="App" 
+      onClick={this.closePriorityPanel}
+      >
         <div className='panel'>
           <h1>Hello</h1>
           <p>Time: {date}</p>
@@ -1374,7 +1381,7 @@ searchResult={this.state.searchResult}
 regularItems={this.state.regularItems}
 newListItem={this.state.newListItem}
 inputValue={this.state.inputValue}
-reportPriority={this.priorityPanelToggle}
+onTogglePriority={this.priorityPanelToggle}
 // reportRegularItems={this.handleReceiveItems}
 reportToggle={this.handleToggle}
 // reportDayItems={this.handleReceiveDayItems}
