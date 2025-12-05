@@ -85,7 +85,7 @@ const myApiClient = new ApiClient('http://localhost:8080');
       this.state = {
         itemDate:"2/8/2025",
         searchItem:"",
-         items:[],
+         items: [],
          open:{},
          regularNewItem:"",
          priority:"",
@@ -93,23 +93,25 @@ const myApiClient = new ApiClient('http://localhost:8080');
       }
           this.addRegularItem = this.addRegularItem.bind(this);
     this.enterNewItem = this.enterNewItem.bind(this);
-    this.fetchData = this.fetchData.bind(this);
+    // this.fetchData = this.fetchData.bind(this);
     }
-    async fetchData() {
-  try {
-    const posts = await myApiClient.get('regular');
-    this.setState(
-      { items: posts },
-      () => {
-        this.props.reportItems(this.state.items);
-      }
-    );
-  } catch (error) {
-    console.error('An error occurred during API operations:', error);
-  }
-}
-  componentDidMount() {
-    this.fetchData();
+//     async fetchData() {
+//   try {
+//     const posts = await myApiClient.get('regular');
+//     this.setState(
+//       { items: posts },
+//       () => {
+//         this.props.reportItems(this.state.items);
+//       }
+//     );
+//   } catch (error) {
+//     console.error('An error occurred during API operations:', error);
+//   }
+// }
+  componentDidUpdate(prevProps) {
+    if (prevProps.regularItems !== this.props.regularItems) {
+      this.setState({ items: this.props.regularItems });
+    }
   }
   toggleOpen = (index) => {
 
@@ -125,7 +127,7 @@ setPriority = (index) => {
 this.setState({priority: index});
 };
       completeFunction = async (event) => {
-      event.stopPropagation();
+      event.stopPropagation(); 
       event.target.innerText = `Done-Yes`;
         let taskName = event.target.parentNode.querySelector('.para').innerText;
 await myApiClient.post('regular', { task: taskName });
@@ -162,8 +164,8 @@ searchPrioritizeFunction = (prioritize, idx) => {
   }, () => this.props.reportItems(this.state.items));
 };
 
-
-    async addRegularItem (taskName) {
+async addRegularItem (taskName) {
+  console.log()
 if(this.state.items.length > 0){
   const updateArray = [...this.state.items[0].task, {name: taskName, 
   completed: false,
@@ -245,6 +247,8 @@ this.setState({regularNewItem: e.target.value})
 
 render(){
   const { searchResult, toggle } = this.props;
+  console.log("regularItems", this.props.regularItems);
+    console.log("regularItems", this.state.items);
       return (
       <div className="regular-items" 
       style={{ display: toggle ? 'block' : 'none' }}
@@ -488,7 +492,7 @@ onClick={(event) => {
       this.state = {
         itemDate:"",
          newItem:"",
-         newListItem:[],
+         newListItem:this.props.newListItem,
          open:{},
          searchItem:"",
          priority:"",
@@ -496,19 +500,19 @@ onClick={(event) => {
       }
     }
 
-    async fetchData() {
-  try {
-    const posts = await myApiClient.get('newlist');
-    this.setState(
-      { newListItem: posts },
-      () => { 
-        this.props.reportItems(this.state.newListItem);
-      }
-    );
-  } catch (error) {
-    console.error('An error occurred during API operations:', error);
-  }
-}
+//     async fetchData() {
+//   try {
+//     const posts = await myApiClient.get('newlist');
+//     this.setState(
+//       { newListItem: posts },
+//       () => { 
+//         this.props.reportItems(this.state.newListItem);
+//       }
+//     );
+//   } catch (error) {
+//     console.error('An error occurred during API operations:', error);
+//   }
+// }
     reNameFunction = (event) => {
       const newtitle = prompt('請輸入新名字');
       if (!newtitle) return;
@@ -559,13 +563,13 @@ const itemName = container.querySelector('.para').innerText;
 });
 }
 
-  componentDidMount() {    
-    const day = new Date();
-    const date = `${day.getFullYear()}-${day.getMonth() + 1}-${day.getDate()}`;
-    // 當組件首次掛載完成後，自動呼叫一次
-    this.fetchData();
-    this.setState({itemDate: date})
-  }
+  // componentDidMount() {    
+  //   const day = new Date();
+  //   const date = `${day.getFullYear()}-${day.getMonth() + 1}-${day.getDate()}`;
+  //   // 當組件首次掛載完成後，自動呼叫一次
+  //   this.fetchData();
+  //   this.setState({itemDate: date})
+  // }
 
       prioritizeFunction = (itemName, itemDate) => {
         
@@ -900,7 +904,7 @@ this.upDatePrioritize(event, "Normal")
    class TaskList extends React.Component {
 constructor(props) {
   super(props);
-  this.state = { toggle: true, priority: true, regularItems:[], itemDate:"" };
+  this.state = { toggle: true, priority: false, regularItems:[], itemDate:"" };
   this.regularExercisesToggle = this.regularExercisesToggle.bind(this);
   this.priorityPanelToggle = this.priorityPanelToggle.bind(this);
 }
@@ -911,11 +915,11 @@ constructor(props) {
         this.setState({toggle : true}, ()=>{this.props.reportToggle(this.state.toggle);})
       }
     }
-    priorityPanelToggle(){
+  priorityPanelToggle(){
       if(this.state.priority !== false){
-        this.setState({priority : false})
+        this.setState({priority : false},  ()=>{this.props.reportPriority(this.state.priority);})
       }else{
-        this.setState({priority : true})
+        this.setState({priority : true},  ()=>{this.props.reportPriority(this.state.priority);})
       }
     }
 
@@ -932,7 +936,13 @@ constructor(props) {
   };
 
      render ()
-     {            return (<div className="itemGroup">
+     {            
+      const {priority} = this.props;
+      
+      return (<div className="itemGroup">
+       <button className='add' 
+       onClick={this.priorityPanelToggle}
+       >Priority</button>
                {this.state.toggle
                  ? <button onClick={this.regularExercisesToggle} className='add'>Go To Today</button>
                  : <button onClick={this.regularExercisesToggle} className='regular'>Go To Regular</button>
@@ -941,10 +951,13 @@ constructor(props) {
                toggle={this.state.toggle}
                reportItems={this.handleReceiveItems}
                inputValue={this.props.inputValue}
+               regularItems={this.props.regularItems}
+
                searchResult={this.props.searchResult}
                updateSearchResultPriority={this.props.updateSearchResultPriority}
                />
                <DailyTaskItem  
+               newListItem={this.props.newListItem}
                searchResult={this.props.searchResult}
                toggle={this.state.toggle}
                reportItems={this.handleReceiveDayItems}
@@ -953,11 +966,296 @@ constructor(props) {
  />
              </div>)};
    }
+class PriorityPanel extends React.Component{
+constructor(props){
+  super(props)
+  this.state = {
+  //         itemDate, 
+  //     setItemDate,
+  //     setMyContent, 
+  //     newItemTitle,  
+  //     setNewItemTitle, 
+  //     setItemTime, 
+newListItem:[],
+  priorityList:[],
+  filteredPriorityList:[],
+  priorityParmeter : "",
+  // timePriority :"Closer",
+  }
+} 
+compareDate = (taskDate1, taskDate2) => {
+  const d1 = new Date(taskDate1.date);
+  const d2 = new Date(taskDate2.date);
 
+  const takeDate1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate());
+  const takeDate2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
+
+  if (this.state.priorityParmeter === "Closer") {
+    return takeDate1 - takeDate2;  // 早的在前
+  } else if (this.state.priorityParmeter === "Farther") {
+    return takeDate2 - takeDate1;  // 晚的在前
+  }
+  return 0;
+}
+
+parseTimeToMinutes(timeStr) {
+  if (!timeStr) return null;       // 沒時間就給 null
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+compareTime = (a, b) => {
+  const t1 = this.parseTimeToMinutes(a.time);
+  const t2 = this.parseTimeToMinutes(b.time);
+
+  if (t1 == null && t2 == null) return 0;
+  if (t1 == null) return 1;  // 沒時間排後面
+  if (t2 == null) return -1; 
+
+  // timePriority: "Closer" / "Farther"
+  if (this.state.priorityParmeter === "Closer") {
+    return t1 - t2;          // 早的在前
+  } else if (this.state.priorityParmeter === "Farther") {
+    return t2 - t1;          // 晚的在前
+  }
+  return 0;
+}
+
+
+ updatePriorityList =() =>{
+  console.log(this.state.priorityList);
+  console.log(this.state.newListItem);
+  const priorityList = this.state.priorityList.map(item => ({ ...item }));
+            for(let i=0; i<priorityList.length; i++){
+              for(let j=0; j<this.state.newListItem.length; j++){
+                for (let x=0; x<this.state.newListItem[j].task.length; x++) {
+                  // console.log(priorityList[i].name);
+                  // console.log(this.state.newListItem[j].task[x].name);
+if(priorityList[i].name === this.state.newListItem[j].task[x].name){
+  priorityList[i].date = this.state.newListItem[j].date
+}
+              }
+              // console.log(this.state.priorityList[i].date)
+            }}
+  //仍未完成時間排序功能
+          if(this.state.priorityParmeter === "Closer") {
+            const filtered = this.state.priorityList
+            .sort(this.compareDate)
+            .sort(this.compareTime)
+             console.log(filtered);
+           this.setState({ filteredPriorityList: filtered });
+            return;
+          }else if(this.state.priorityParmeter === "Farther") {          
+            const filtered = this.state.priorityList
+            .sort(this.compareDate)
+            .sort(this.compareTime)
+            .reverse()
+            console.log(filtered);
+            this.setState({ filteredPriorityList: filtered });
+            return;
+          }
+  
+          const filtered = this.state.priorityList.filter((item) => {
+            if(item.priority === this.state.priorityParmeter){
+              return item
+            }
+          }
+          );
+          if (filtered) {
+            this.setState({ filteredPriorityList: filtered });
+          } else {
+            this.setState({ filteredPriorityList: [] });
+          }
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps.regularItems !== this.props.regularItems) {
+      let onlyNewList = this.props.newListItem;
+
+      this.setState({ priorityList: [...this.props.regularItems, ...this.props.newListItem].flatMap(item => item.task),
+        filteredPriorityList: [...this.props.regularItems, ...this.props.newListItem].flatMap(item => item.task),
+        newListItem: onlyNewList
+       });
+    }
+  }
+
+
+
+    changePriority = (event) => {
+        this.setState({priorityParmeter: event.target.value}, this.updatePriorityList)
+    };
+        completeFunction = (event) => {
+      event.stopPropagation();
+      event.target.innerText = `Done-Yes`;
+      if (this.state.regularExercises) {
+        let taskName = event.target.parentNode.querySelector('.para').innerText;
+        fetch(`http://localhost:8080/regular`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ task: taskName })
+        })
+          .then(res => res.json())
+          .then(data => console.log("✅ 來自伺服器的回應：", data))
+          .catch(error => console.error("❌ 發生錯誤：", error));
+      } else {
+        const itemName = event.target.parentNode.parentNode.querySelector('.para').innerText;
+        const itemDate = event.target.parentNode.parentNode.querySelector('.date').value;
+
+        fetch(`http://localhost:8080/newlist`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ task: itemName, date: itemDate })
+        })
+          .then(res => res.json())
+          .then(data => console.log("✅ 來自伺服器的回應：", data))
+          .catch(error => console.error("❌ 發生錯誤：", error));
+      }
+    };
+render(){
+  // const newlistitems  = useSelector(state => state.tasks.newlistTasks);
+  // const [priorityList, setPriorityList] = useState([]);
+const {priority} = this.props;
+console.log(this.state.priorityParmeter);
+  return(
+            <div 
+            className={priority ? "priority-panel show" : "priority-panel hide"}
+            >
+             <form className='priority-filter'>
+                <select id="sel1" value={this.state.priorityParmeter} onChange={this.changePriority}>
+                  <option value="Urgent and Vital">Urgent and Vital</option>
+                  <option value="Important">Important</option>
+                  <option value="Normal">Normal</option>
+                  <option value="Closer">Closer</option>
+                  <option value="Farther">Farther</option>
+                </select>
+              </form>
+
+              <div className="priority-panel-toDo-container">
+                {this.state.filteredPriorityList.map((item, index) => {
+                  return (
+                    <div
+                      className="priority-panel-toDo"
+                      key={index}
+                      style={
+                        item.priority === "Urgent and Vital"
+                          ? { backgroundColor: "red", color: "white" }
+                          : item.priority === "Important"
+                            ? { backgroundColor: "orange", color: "white" }
+                            : { color: "black" }
+                      }
+                      // onClick={(e) => {
+                      //   e.stopPropagation();
+                      //   setNewItemTitle(item.name);
+                      //   setItemTime(item.time);
+                      //   setItemDate(item.date);
+                      // }}
+                    >
+                      <button className="complete" onClick={this.completeFunction}>
+                        {item.completed === false ? "Done-No" : "Done-Yes"}
+                      </button>
+                      <p
+                        className="para"
+                        style={
+                          item.priority === "Normal"
+                            ? { color: "black" }
+                            : { color: "white" }
+                        }
+                      >
+                        {item.name}
+                      </p>
+                      <button
+                        className="dropdown"
+                        // onClick={(e) => {
+                        //   e.stopPropagation();
+                        //   panelOpen(index);
+                        // }}
+                      >
+                        open List
+                      </button>
+                      {/* {openPanelPriority[index] && (
+                        <div
+                          className="buttonGroup"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            panelOpen(index);
+                          }}
+                        >
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteFunction(event, item.date);
+                            }}
+                            className="delete"
+                          >
+                            Delete
+                          </button>
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              reNameFunction(event, item.date);
+                            }}
+                          >
+                            Rename
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectionPriority(index);
+                            }}
+                          >
+                            Prioritize
+                          </button>
+                        </div>
+                      )} */}
+                      {/* {selectionPriority === index && (
+                        <div
+                          className="selection-priority-rating"
+
+                        >
+                          <h1 onClick={(e) => {
+        // 先設定好想要的優先級
+        prioritize.current = "Urgent and Vital";
+        // 把 event、index（或 taskId）和 item.date 一起傳進去
+        prioritizeFunction(e, index, item.date);
+        // 關閉選單
+        setSelectionPriority(null);
+      }}>Urgent and Vital</h1>
+                          <h1 onClick={(e) => {
+        // 先設定好想要的優先級
+        prioritize.current = "Important";
+        // 把 event、index（或 taskId）和 item.date 一起傳進去
+        prioritizeFunction(e, index, item.date);
+        // 關閉選單
+        setSelectionPriority(null);
+      }}>Important</h1>
+                          <h1 onClick={(e) => {
+        // 先設定好想要的優先級
+        prioritize.current = "Normal";
+        // 把 event、index（或 taskId）和 item.date 一起傳進去
+        prioritizeFunction(e, index, item.date);
+        // 關閉選單
+        setSelectionPriority(null);
+      }}>Normal</h1>
+                          
+                        </div>
+                      )} */}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* <button onClick={() => { setShowPriorityPanel(false); }} className='close-btn'>Close</button>  */}
+            </div>
+  );
+}
+}
   class App extends React.Component{
     constructor(){
       super();
       this.state = {
+priority: false,
       inputValue : "",
       searchResult:[],
       result : "",
@@ -968,7 +1266,32 @@ constructor(props) {
       }
 
     }
-    
+        async fetchData() {
+  try {
+    const regularPosts = await myApiClient.get('regular');   
+    const newListposts = await myApiClient.get('newlist');
+    console.log(regularPosts, newListposts);
+    this.setState(
+      {regularItems: regularPosts }
+      // ,
+      // () => {
+      //   this.props.reportItems(this.state.regularItems);
+      // }
+    );
+        this.setState(
+      { newListItem: newListposts }
+      // ,
+      // () => { 
+      //   this.props.reportItems(this.state.newListItem);
+      // }
+    );
+  } catch (error) {
+    console.error('An error occurred during API operations:', error);
+  }
+}
+  componentDidMount() {
+    this.fetchData();
+  }
   handleToggle = (itemsFromChild) => {
     this.setState({ toggle: itemsFromChild });
   };
@@ -976,14 +1299,14 @@ constructor(props) {
         
     this.setState({ itemDate: itemsFromChild });
   };
-  handleReceiveItems = (itemsFromChild) => {
-    this.setState({ regularItems: itemsFromChild });
-  };
+  // handleReceiveItems = (itemsFromChild) => {
+  //   this.setState({ regularItems: itemsFromChild });
+  // };
 
-  handleReceiveDayItems = (itemsFromChild) => {
+  // handleReceiveDayItems = (itemsFromChild) => {
 
-    this.setState({ newListItem: itemsFromChild });
-  };
+  //   this.setState({ newListItem: itemsFromChild });
+  // };
 
 getInputValue = (e)=>{
   if(e.target.value !==""){
@@ -1000,6 +1323,11 @@ this.setState({searchResult:[]})
       this.searchItem();
     }
   }
+
+  priorityPanelToggle= (itemsFromChild)=>{
+        this.setState({priority : itemsFromChild})
+
+    }
 searchItem = () => {
   const allDayItems = this.state.newListItem.map((item)=>{return item.task}).flat()
   const searchItem = [...this.state.regularItems[0].task,...allDayItems]
@@ -1057,12 +1385,24 @@ render (){
             </div>
 <TaskList 
 searchResult={this.state.searchResult}
+regularItems={this.state.regularItems}
+newListItem={this.state.newListItem}
 inputValue={this.state.inputValue}
-reportRegularItems={this.handleReceiveItems}
+reportPriority={this.priorityPanelToggle}
+// reportRegularItems={this.handleReceiveItems}
 reportToggle={this.handleToggle}
-reportDayItems={this.handleReceiveDayItems}
+// reportDayItems={this.handleReceiveDayItems}
 reportDate={this.handleReceiveDate}
 updateSearchResultPriority={this.updateSearchResultPriority}
+/>
+<PriorityPanel 
+// priorityList={priorityList}
+priority={this.state.priority}
+toggle={this.state.toggle}
+regularItems={this.state.regularItems}
+newListItem={this.state.newListItem}
+// reportDayItems={this.handleReceiveDayItems}
+// reportRegularItems={this.handleReceiveItems}
 />
             <button onClick={this.save} className='save-btn'>save</button>
           </div>
