@@ -3,6 +3,7 @@ const http = require('http');
 const { Router } = require('./router');
 const today = require('./TaskModel');
 const regular = require('./RegularModel');
+const todayDetail = require('./DetailModel');
 require('dotenv').config();
 
 const url = process.env.DATABASE_URL;
@@ -28,7 +29,20 @@ async function main() {
     console.error('DB connect error', err);
   }
 }
-
+    router.get("/newlist-detail", async({res}) => {
+      try{
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        const detail = await todayDetail.find({});
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(detail));
+      }catch(error){
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: 'Internal Server Error', details: error.message }));
+    }})
 
 router.put('/newlist', async ({ req, res }) => {
   let body = '';

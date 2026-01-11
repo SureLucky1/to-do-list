@@ -79,6 +79,150 @@ class ApiClient {
 
 const myApiClient = new ApiClient('http://localhost:8080');
 
+  class Detail extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+ContentList : [],
+        myContent: '',
+        selectedItem:{},
+title: this.props.newItemTitle,
+itemTime: '',
+itemDate: this.props.itemDate,
+      };
+    }
+
+    syncSelectedItemThenFetch = (nextSelectedItem) => {
+  this.setState(
+    { selectedItem: nextSelectedItem ?? {} },
+    () => {
+      this.fetchData(); // fetchData 內部會在 ContentList setState 後再呼叫 findItemDetail
+    }
+  );
+};
+
+async fetchData() {
+  try {
+    const newItemContent = await myApiClient.get('newlist-detail');
+   console.log(this.props.toggle)
+    if(this.props.toggle){
+    this.setState(
+      { itemDate: this.props.regularItems[0].date },
+    );
+    }else{
+    this.setState(
+      { 
+        ContentList: newItemContent
+      }, ()=>{this.findItemDetail()}
+    );
+    
+    }
+
+  } catch (error) {
+    console.error('An error occurred during API operations:', error);
+  }
+}
+
+findItemDetail(){
+    if(!this.state.selectedItem.dailyItemTitle) return;
+let Detail;
+    for (const item of this.state.ContentList) {
+     Detail = item.taskDetail.find((subItem)=>{ 
+      
+     return subItem.title === this.state.selectedItem.dailyItemTitle
+
+    }
+  )
+  if (Detail) break;
+    }
+    this.setState({myContent: Detail.content})
+}
+  async componentDidMount() {
+    await this.fetchData();
+    
+    console.log(this.props.selectedItem)
+  }
+
+  async componentDidUpdate(prevProps) {
+            const day = new Date()
+const date = `${day.getDate()}/${day.getMonth() + 1}/${day.getFullYear()}`
+
+  if (prevProps.selectedItem.dailyItemTitle !== this.props.selectedItem.dailyItemTitle) {
+    this.syncSelectedItemThenFetch(this.props.selectedItem);
+    return;
+  }
+
+  if (prevProps.toggle !== this.props.toggle) {
+    // toggle 改變也要重新 fetch，但 selectedItem 仍以目前 state 為準
+    this.syncSelectedItemThenFetch(this.state.selectedItem);
+  }
+
+console.log(date)
+console.log(this.state.itemDate)
+    //     if (this.state.itemDate !== date) {
+    //   await myApiClient.put('regular-reset', {
+    //       date: date
+    //     });
+    // }
+
+  } 
+
+changeMyContent = (e) => {
+      this.setState({ myContent: e.target.value });
+    }
+
+    saveDtail = async (event) => {
+      event.stopPropagation();
+      if (this.props.toggle) {
+        const uploadData = await myApiClient.put('regular-detail', { content: this.state.myContent, title: this.state.title, date: null });
+
+      } else {
+        // fetch(`http://localhost:8080/newlist-detail`, {
+        //   method: 'PUT',
+        //   headers: {
+        //     'Content-Type': 'application/json'
+        //   },
+        //   body: JSON.stringify({ content: myContent, title: newItemTitle, date: itemDate })
+        // })
+        //   .then(res => res.json())
+        //   .catch(error => console.error("❌ 發生錯誤：", error));
+        //   const existitemList = store.getState().tasks.newlistTasks.find(item=>item.date === itemDate).task
+        //   const updatedItem = existitemList.map((item) => {
+        //     if (item.name === newItemTitle) {
+        //       return { ...item, time: itemTime };
+        //     }
+        //     return item;
+        //   });
+        // console.log(existitemList)
+
+        // let date = itemDate;
+        // const task = { date: date, taskList: updatedItem };
+        // dispatch(newlistItemPut(task))
+      }
+    };
+
+render (){
+
+  return (
+          <div className='detail'>
+            <h1>Details</h1>
+            <input type="time"                     
+            className="time"
+                      value={this.state.itemTime}
+                      // onChange={(e) => setItemTime(e.target.value)}
+                      />
+            <div className='content'>
+              <h2>標題: {this.state.selectedItem.dailyItemTitle}</h2>
+              <textarea
+                value={this.state.myContent}
+                onChange={(e) => this.changeMyContent(e)}
+              />
+              <button onClick={(e) => { this.saveDtail(e); }}>saveDetail</button>
+            </div>
+          </div>
+  )
+    }
+  } 
 
   class RegularTaskItem extends React.Component {
     constructor(props){
@@ -492,6 +636,11 @@ onClick={(event) => {
       super(props)
       this.state = {
         itemDate:"",
+        selectedItem:{
+          dailyItemTitle:"",
+          dailyItemTime:"",
+          dailyItemDate:""
+        },
          newItem:"",
          newListItem:this.props.newListItem,
          open:{},
@@ -514,6 +663,19 @@ onClick={(event) => {
 //     console.error('An error occurred during API operations:', error);
 //   }
 // }
+componentDidUpdate(prevProps){
+  if (prevProps.newListItem !== this.props.newListItem) {
+    this.setState({ newListItem: this.props.newListItem });
+  }
+}
+
+  selectDailyItem = (name, time, itemDate) => {  
+    this.setState({selectedItem:{dailyItemTitle: name, dailyItemTime: time, dailyItemDate: itemDate} },  
+      ()=>{this.props.reportDailyItem({dailyItemTitle: name, dailyItemTime: time, dailyItemDate: itemDate})
+        console.log(this.state.selectedItem)
+      });
+  };
+
     reNameFunction = (event) => {
       const newtitle = prompt('請輸入新名字');
       if (!newtitle) return;
@@ -572,8 +734,7 @@ const itemName = container.querySelector('.para').innerText;
   //   this.setState({itemDate: date})
   // }
 
-      prioritizeFunction = (itemName, itemDate) => {
-        
+      prioritizeFunction = (itemName, itemDate) => { 
        this.setState({newListItem: this.state.newListItem.map((item)=> 
         item.date === itemDate? {
           ...item,
@@ -654,9 +815,9 @@ this.setState({priority: index});
 
   selectedDate=(e)=>{
 const date = e.target.value;
-this.setState(() => ({
+this.setState({
   itemDate: date
-}), ()=>{
+}, ()=>{
   this.props.reportDate(this.state.itemDate);
 });
 
@@ -664,6 +825,7 @@ this.setState(() => ({
      render ()  
      {
 const {searchResult, toggle} = this.props;
+console.log(this.state.newListItem)
       return (<div className="new-items"  
      style={{ display: toggle ? 'none' : 'block' }}
      >
@@ -698,7 +860,12 @@ const {searchResult, toggle} = this.props;
                               ? { backgroundColor: "orange", color: "white" }
                               : { color: "black" }
                           }
-                          //onClick={(e) => { e.stopPropagation(); setNewItemTitle(item.name); setItemTime(item.time); setItemDate(itemDate)}}
+                          onClick={(e) => { e.stopPropagation(); 
+                          this.selectDailyItem(item.name, item.time, this.state.itemDate)
+                          // setNewItemTitle(item.name); 
+                          // setItemTime(item.time); 
+                          // setItemDate(itemDate)
+                          }}
                         >
                           <button
                             className="complete"
@@ -905,12 +1072,27 @@ this.upDatePrioritize(event, "Normal")
    class TaskList extends React.Component {
 constructor(props) {
   super(props);
-  this.state = { regularItems:[], itemDate:"" };
+  this.state = { regularItems:[], itemDate:"", selectedItem:{}};
   this.regularExercisesToggle = this.regularExercisesToggle.bind(this);
   this.priorityPanelToggle = this.priorityPanelToggle.bind(this);
 }
+
+componentDidUpdate(prevProps){
+  if(prevProps.selectedItem !== this.props.selectedItem){
+    this.setState({
+      selectedItem: this.props.selectedItem
+    })
+  }
+}
+  selectDailyItem = (itemsFromChild) => {  
+    this.setState({ selectedItem: itemsFromChild },  ()=>{
+      this.props.reportDailyItem(itemsFromChild)
+      console.log(this.props.selectedItem)
+    });
+  };
   regularExercisesToggle = () => {
     const next = !this.props.toggle;
+    console.log("TaskList next =", next);
     this.props.reportToggle(next);
   };
   priorityPanelToggle(e){
@@ -933,7 +1115,7 @@ this.props.onTogglePriorityPanel(e);
      render ()
      {            
       const {priority} = this.props;
-      
+        console.log(this.props.selectedItem)
       return (<div className="itemGroup">
        <button className='add' 
        onClick={this.priorityPanelToggle}
@@ -955,8 +1137,10 @@ this.props.onTogglePriorityPanel(e);
                newListItem={this.props.newListItem}
                searchResult={this.props.searchResult}
                toggle={this.props.toggle}
+               selectedItem={this.state.selectedItem}
                reportItems={this.handleReceiveDayItems}
                reportDate={this.handleReceiveDate}
+               reportDailyItem={this.selectDailyItem}
                updateSearchResultPriority={this.props.updateSearchResultPriority}
  />
              </div>)};
@@ -967,7 +1151,7 @@ constructor(props){
   super(props)
   this.state = {
   //         itemDate, 
-  //     setItemDate,
+  //     setItemDate, 
   //     setMyContent, 
   //     newItemTitle,  
   //     setNewItemTitle, 
@@ -1280,6 +1464,7 @@ const {priority, onClose} = this.props;
             </div>
   );
 }}
+
   class App extends React.Component{
     constructor(){
       super();
@@ -1291,7 +1476,8 @@ priority: false,
       regularItems: [],
       newListItem: [],
       toggle: true,
-      itemDate:""
+      itemDate:"",
+      selectedItem:{}
       }
 
     }
@@ -1318,27 +1504,37 @@ priority: false,
     console.error('An error occurred during API operations:', error);
   }
 }
+
   componentDidMount() {
     this.fetchData();
   }
-  handleToggle = (itemsFromChild) => {
-    this.setState({ toggle: itemsFromChild });
-  };
+
+handleToggle = (itemsFromChild) => {
+  console.log("App.handleToggle got:", itemsFromChild, "prev:", this.state.toggle);
+  this.setState({ toggle: itemsFromChild }, () => {
+    console.log("App.toggle now:", this.state.toggle);
+  });
+};
+
   updateNewListItem = (itemsFromChild) => {
     this.setState({ newListItem: itemsFromChild });
   }
-  handleReceiveDate = (itemsFromChild) => {
-        
+
+  selectDailyItem = (itemsFromChild) => {  
+    this.setState({ selectedItem: itemsFromChild });
+  };
+
+  handleReceiveDate = (itemsFromChild) => {  
     this.setState({ itemDate: itemsFromChild });
   };
-  // handleReceiveItems = (itemsFromChild) => {
-  //   this.setState({ regularItems: itemsFromChild });
-  // };
 
-  // handleReceiveDayItems = (itemsFromChild) => {
+  handleReceiveItems = (itemsFromChild) => {
+    this.setState({ regularItems: itemsFromChild });
+  };
 
-  //   this.setState({ newListItem: itemsFromChild });
-  // };
+  handleReceiveDayItems = (itemsFromChild) => {
+    this.setState({ newListItem: itemsFromChild });
+  };
 
 getInputValue = (e)=>{
   if(e.target.value !==""){
@@ -1348,6 +1544,7 @@ this.setState({searchResult:[]})
   }
 }
   componentDidUpdate(prevProps, prevState) {
+    console.log(prevState.selectedItem)
     const dataChanged =
       prevState.regularItems !== this.state.regularItems ||
       prevState.newListItem !== this.state.newListItem;
@@ -1407,8 +1604,10 @@ if(this.state.newListItem[i].date === this.state.itemDate)
     };
 
 render (){
+  console.log(this.state.selectedItem)
               const day = new Date();
       const date = `${day.getDate()}/${day.getMonth() + 1}/${day.getFullYear()}`;
+      console.log(this.state.selectedItem)
       return (<ShowContext.Provider>
       <div className="App" 
       onClick={this.closePriorityPanel}
@@ -1430,10 +1629,12 @@ regularItems={this.state.regularItems}
 newListItem={this.state.newListItem}
 inputValue={this.state.inputValue}
 onTogglePriorityPanel={this.priorityPanelToggle}
-// reportRegularItems={this.handleReceiveItems}
+reportRegularItems={this.handleReceiveItems}
+selectedItem={this.state.selectedItem}
 toggle={this.state.toggle}
 reportToggle={this.handleToggle}
-// reportDayItems={this.handleReceiveDayItems}
+reportDayItems={this.handleReceiveDayItems}
+reportDailyItem={this.selectDailyItem}
 reportDate={this.handleReceiveDate}
 updateSearchResultPriority={this.updateSearchResultPriority}
 />
@@ -1450,7 +1651,13 @@ updateNewListItem={this.updateNewListItem}
 />
             <button onClick={this.save} className='save-btn'>save</button>
           </div>
-
+<Detail 
+regularItems={this.state.regularItems}
+newListItem={this.state.newListItem}
+selectedItem = {this.state.selectedItem}
+// reportDailyItem={this.selectDailyItem}
+toggle={this.state.toggle}
+/>
         </div>
       </div>
       </ShowContext.Provider>)
